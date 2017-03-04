@@ -1,0 +1,24 @@
+name: json_mapper
+description:
+    A library that encodes dart objects to entities. It is very similar to redstone_mapper, except that it
+    doesn't require redstone so it can use somewhat relaxed dependencies. Also, unlike redstone_mapper,
+    it can handle parameterized types. The API is mostly derived from the redstone_mapper, and it produces information
+    that is slightly easier to modify, for example, to introspect on the generated fields.
+version: 0.0.1
+author: llamadonica@gmail.com
+#homepage: https://www.example.com
+
+dependencies:
+  quiver: '^0.24.0'
+  code_transformers: '^0.5.1'
+
+environment:
+  sdk: '>=1.0.0 <2.0.0'
+
+dev_dependencies:
+  test: '>=0.12.0 <0.13.0'
+
+transformers:
+- json_mapper
+- test/pub_serve:
+    $include: test/mapper_test{.*,}.dart
