@@ -24,8 +24,8 @@ main() {
           equals({'a': 1, 'b': 'foo', 'c': 12.345}));
     });
     test('can encode DateTimes', () {
-      expect(encode(new DateTime.fromMillisecondsSinceEpoch(3200000000000)),
-          equals('2071-05-27T17:53:20.000'));
+      expect(encode(new DateTime.fromMillisecondsSinceEpoch(3200000000000).toUtc()),
+          equals('2071-05-28T00:53:20.000Z'));
     });
 
     test('can decode Lists', () {
@@ -46,7 +46,7 @@ main() {
     });
     test('can decode DateTimes', () {
       expect(
-          decode/*<DateTime>*/('2071-05-27T17:53:20.000', new ConcreteType<DateTime>())
+          decode/*<DateTime>*/('2071-05-28T00:53:20.000Z', new ConcreteType<DateTime>())
               .millisecondsSinceEpoch,
           equals(3200000000000));
     });
