@@ -2,6 +2,8 @@
 
 A slightly improved JSON mapper for Dart
 
+[![Build Status](https://travis-ci.org/llamadonica/json_mapper.svg?branch=master)](https://travis-ci.org/llamadonica/json_mapper)
+
 ## Explanation
 
 This is a json mapper for Dart derived largely from `redstone_mapper`. It's designed to take care of
