@@ -1,8 +1,11 @@
 language: dart
 sudo: false
-with_content_shell: true
 dart:
   - stable
+  - dev
+script: test/run-tests.sh
 branches:
   only:
     - master
+env:
+  - DART_ANALYZER_FLAGS=--fatal-warnings

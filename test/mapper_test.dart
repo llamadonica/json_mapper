@@ -4,8 +4,7 @@ import 'package:json_mapper/metadata.dart';
 import 'package:test/test.dart';
 import 'src/aux.dart';
 
-
-main() {
+void main() {
   group('Mapper', () {
     setUp(() {
       bootstrapMapper();
@@ -24,7 +23,9 @@ main() {
           equals({'a': 1, 'b': 'foo', 'c': 12.345}));
     });
     test('can encode DateTimes', () {
-      expect(encode(new DateTime.fromMillisecondsSinceEpoch(3200000000000).toUtc()),
+      expect(
+          encode(
+              new DateTime.fromMillisecondsSinceEpoch(3200000000000).toUtc()),
           equals('2071-05-28T00:53:20.000Z'));
     });
 
@@ -46,7 +47,8 @@ main() {
     });
     test('can decode DateTimes', () {
       expect(
-          decode/*<DateTime>*/('2071-05-28T00:53:20.000Z', new ConcreteType<DateTime>())
+          decode/*<DateTime>*/(
+                  '2071-05-28T00:53:20.000Z', new ConcreteType<DateTime>())
               .millisecondsSinceEpoch,
           equals(3200000000000));
     });
@@ -69,232 +71,395 @@ main() {
             'foo': 'foo',
             'bar': 12,
             'buzz': ['buzz', 'buzzz']
-          }, new ConcreteType<Foo>())), equals({
-        'foo': 'foo',
-        'bar': 12,
-        'buzz': ['buzz', 'buzzz']
-      }));
+          }, new ConcreteType<Foo>())),
+          equals({
+            'foo': 'foo',
+            'bar': 12,
+            'buzz': ['buzz', 'buzzz']
+          }));
     });
     test('can encode nested classes', () {
-      var originalType = new NestedType()
+      final originalType = new NestedType()
         ..id = '12345'
-        ..foos = {'foo1' : new Foo()
-          ..buzz = ['bar', 'bat']
-          ..bar = 5
-          ..foo = 'fooz'
+        ..foos = {
+          'foo1': new Foo()
+            ..buzz = ['bar', 'bat']
+            ..bar = 5
+            ..foo = 'fooz'
         };
-      expect(encode(originalType), equals({
-        '_id': '12345',
-        'Foos': {'foo1': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}}
-      }));
+      expect(
+          encode(originalType),
+          equals({
+            '_id': '12345',
+            'Foos': {
+              'foo1': {
+                'foo': 'fooz',
+                'bar': 5,
+                'buzz': ['bar', 'bat']
+              }
+            }
+          }));
     });
     test('can decode nested classes', () {
-      expect(encode(decode({
-        '_id': '12345',
-        'Foos': {'foo1': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}}
-      }, new ConcreteType<NestedType>())), equals({
-        '_id': '12345',
-        'Foos': {'foo1': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}}
-      }));
+      expect(
+          encode(decode({
+            '_id': '12345',
+            'Foos': {
+              'foo1': {
+                'foo': 'fooz',
+                'bar': 5,
+                'buzz': ['bar', 'bat']
+              }
+            }
+          }, new ConcreteType<NestedType>())),
+          equals({
+            '_id': '12345',
+            'Foos': {
+              'foo1': {
+                'foo': 'fooz',
+                'bar': 5,
+                'buzz': ['bar', 'bat']
+              }
+            }
+          }));
     });
     test('can encode classes with generic arguments', () {
-      var originalType = new GenericType<Foo>()
+      final originalType = new GenericType<Foo>()
         ..any = (new Foo()
           ..buzz = ['bar', 'bat']
           ..bar = 5
-          ..foo = 'fooz')
-      ;
-      expect(encode(originalType), equals({
-        'any': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}
-      }));
+          ..foo = 'fooz');
+      expect(
+          encode(originalType),
+          equals({
+            'any': {
+              'foo': 'fooz',
+              'bar': 5,
+              'buzz': ['bar', 'bat']
+            }
+          }));
     });
     test('can decode classes with generic arguments', () {
-      var originalType = new GenericType<Foo>()
+      final originalType = new GenericType<Foo>()
         ..any = (new Foo()
           ..buzz = ['bar', 'bat']
           ..bar = 5
-          ..foo = 'fooz')
-      ;
-      expect(encode(decode(encode(originalType), new ConcreteType<GenericType<Foo>>())), equals({
-        'any': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}
-      }));
+          ..foo = 'fooz');
+      expect(
+          encode(decode(
+              encode(originalType), new ConcreteType<GenericType<Foo>>())),
+          equals({
+            'any': {
+              'foo': 'fooz',
+              'bar': 5,
+              'buzz': ['bar', 'bat']
+            }
+          }));
     });
     test('can encode classes with generic argument T when T is dynamic', () {
-      var originalType = new GenericType()
+      final originalType = new GenericType()
         ..any = (new Foo()
           ..buzz = ['bar', 'bat']
           ..bar = 5
-          ..foo = 'fooz')
-      ;
-      expect(encode(originalType), equals({
-        'any': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}
-      }));
+          ..foo = 'fooz');
+      expect(
+          encode(originalType),
+          equals({
+            'any': {
+              'foo': 'fooz',
+              'bar': 5,
+              'buzz': ['bar', 'bat']
+            }
+          }));
     });
-    test('fails when decoding classes with generic argument T when T is dynamic', () {
-      var originalType = new GenericType()
+    test(
+        'fails when decoding classes with generic argument T when T is dynamic',
+        () {
+      final originalType = new GenericType()
         ..any = (new Foo()
           ..buzz = ['bar', 'bat']
           ..bar = 5
-          ..foo = 'fooz')
-      ;
-      expect(() => encode(decode(encode(originalType), new ConcreteType<GenericType>())), throws);
+          ..foo = 'fooz');
+      expect(
+          () => encode(
+              decode(encode(originalType), new ConcreteType<GenericType>())),
+          throws);
     });
-    test('succeeds when decoding classes with generic argument T when T is dynamic but its value is null', () {
-      var originalType = new GenericType()
-        ..any = null;
-      expect(encode(decode(encode(originalType), new ConcreteType<GenericType>())), equals({}));
+    test(
+        'succeeds when decoding classes with generic argument T when T is dynamic but its value is null',
+        () {
+      final originalType = new GenericType()..any = null;
+      expect(
+          encode(decode(encode(originalType), new ConcreteType<GenericType>())),
+          equals({}));
     });
     test('can encode classes that inherit from generics', () {
-      var originalType = new GenericReified()
+      final originalType = new GenericReified()
         ..any = (new Foo()
           ..buzz = ['bar', 'bat']
           ..bar = 5
-          ..foo = 'fooz')
-      ;
-      expect(encode(originalType), equals({
-        'any': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}
-      }));
+          ..foo = 'fooz');
+      expect(
+          encode(originalType),
+          equals({
+            'any': {
+              'foo': 'fooz',
+              'bar': 5,
+              'buzz': ['bar', 'bat']
+            }
+          }));
     });
     test('can decode classes that inherit from generics', () {
-      var originalType = new GenericReified()
+      final originalType = new GenericReified()
         ..any = (new Foo()
           ..buzz = ['bar', 'bat']
           ..bar = 5
-          ..foo = 'fooz')
-      ;
-      expect(encode(decode(encode(originalType), new ConcreteType<GenericReified>())), equals({
-        'any': {'foo': 'fooz', 'bar': 5, 'buzz': ['bar', 'bat']}
-      }));
+          ..foo = 'fooz');
+      expect(
+          encode(
+              decode(encode(originalType), new ConcreteType<GenericReified>())),
+          equals({
+            'any': {
+              'foo': 'fooz',
+              'bar': 5,
+              'buzz': ['bar', 'bat']
+            }
+          }));
     });
     test('can encode using annotations on getters', () {
-      var originalType = new GetterAndSetter()..foo = 'bar';
-      expect(encode(originalType), equals({'foo':'bar'}));
+      final originalType = new GetterAndSetter()..foo = 'bar';
+      expect(encode(originalType), equals({'foo': 'bar'}));
     });
     test('can encode using annotations on setters', () {
-      var originalType = new GetterAndSetter()..foo = 'bar';
-      var newType = decode/*<GetterAndSetter>*/(encode(originalType), new ConcreteType<GetterAndSetter>());
+      final originalType = new GetterAndSetter()..foo = 'bar';
+      final newType = decode/*<GetterAndSetter>*/(
+          encode(originalType), new ConcreteType<GetterAndSetter>());
       expect(newType.foo, equals('bar'));
     });
     test('can encode final fields', () {
-      var originalType = new FinalField('bar');
-      expect(encode(originalType), equals({'foo':'bar'}));
+      final originalType = new FinalField('bar');
+      expect(encode(originalType), equals({'foo': 'bar'}));
     });
-    test('can initialize objects using @Field annotations on constructor arguments.', () {
-      var finalType = decode/*<FinalField>*/({'foo':'bar'}, new ConcreteType<FinalField>());
+    test(
+        'can initialize objects using @Field annotations on constructor arguments.',
+        () {
+      final finalType = decode/*<FinalField>*/(
+          {'foo': 'bar'}, new ConcreteType<FinalField>());
       expect(finalType.foo, equals('bar'));
     });
     test('@Field works when inherited', () {
-      var originalType = new ExtendedField()..foo=123;
+      final originalType = new ExtendedField()..foo = 123;
       expect(encode(originalType), equals({'_id': 123}));
     });
     test('decoding works correctly in loaded libraries', () {
-      expect(decodeRemote({'any':'Foo'}).any, equals('Foo'));
+      expect(decodeRemote({'any': 'Foo'}).any, equals('Foo'));
     });
     test('inheriting ConcreteType works', () {
-      var originalType = new GenericType<int>()
-        ..any = 4
-      ;
-      expect(encode(decode(encode(originalType), new ConcreteTypeGenericTypeInt())), equals({
-        'any': 4
-      }));
+      final originalType = new GenericType<int>()..any = 4;
+      expect(
+          encode(decode(
+              encode(originalType), new ConcreteType<GenericType<int>>())),
+          equals({'any': 4}));
     });
-    test('inheriting ConcreteType works even when using generic parameters', () {
-      var originalType = <String>['foo', 'bar'];
-      expect(encode(decode(encode(originalType), new ConcreteTypeSub<String>())), equals(['foo', 'bar']));
+    test('inheriting ConcreteType works even when using generic parameters',
+        () {
+      final originalType = <String>['foo', 'bar'];
+      expect(
+          encode(
+              decode(encode(originalType), new ConcreteType<List<String>>())),
+          equals(['foo', 'bar']));
     });
-    test('inheriting ConcreteType works even when using complex generic parameters', () {
-      var originalType = <List<String>>[<String>['foo', 'bar'],<String>['bat']];
-      expect(encode(decode(encode(originalType), new ConcreteTypeSubSub<String>())), equals([['foo', 'bar'],['bat']]));
+    test(
+        'inheriting ConcreteType works even when using complex generic parameters',
+        () {
+      final originalType = <List<String>>[
+        <String>['foo', 'bar'],
+        <String>['bat']
+      ];
+      expect(
+          encode(decode(
+              encode(originalType), new ConcreteType<List<List<String>>>())),
+          equals([
+            ['foo', 'bar'],
+            ['bat']
+          ]));
     });
     test('delegates to ConcreteType work', () {
-      var originalType = <List<String>>[<String>['foo', 'bar'],<String>['bat']];
-      expect(encode(decode(encode(originalType), new ConcreteTypeSubExpander<String>().delegate)), equals([['foo', 'bar'],['bat']]));
+      final originalType = <List<String>>[
+        <String>['foo', 'bar'],
+        <String>['bat']
+      ];
+      expect(
+          encode(decode(encode(originalType),
+              new ConcreteTypeSubExpander<String>().delegate)),
+          equals([
+            ['foo', 'bar'],
+            ['bat']
+          ]));
     });
     test('can handle indirect types', () {
-      var originalType = new GenericType<IndirectType>()..any = (new IndirectType()..id=1);
-      expect(encode(decode(encode(originalType), new ConcreteType<GenericType<IndirectType>>())) , equals({'any':{'id':1}}));
+      final originalType = new GenericType<IndirectType>()
+        ..any = (new IndirectType()..id = 1);
+      expect(
+          encode(decode(encode(originalType),
+              new ConcreteType<GenericType<IndirectType>>())),
+          equals({
+            'any': {'id': 1}
+          }));
     });
     test('Can encode opaque maps', () {
-      var originalType = new OpaqueMap({'test': 1, 'This':[1,2,3], 'Something': {'a': 4.5}});
-      expect(encode(originalType), equals({'test': 1, 'This':[1,2,3], 'Something': {'a': 4.5}}));
+      final originalType = new OpaqueMap({
+        'test': 1,
+        'This': [1, 2, 3],
+        'Something': {'a': 4.5}
+      });
+      expect(
+          encode(originalType),
+          equals({
+            'test': 1,
+            'This': [1, 2, 3],
+            'Something': {'a': 4.5}
+          }));
     });
     test('Can decode opaque maps', () {
-      expect(decode({'test': 1, 'This':[1,2,3], 'Something': {'a': 4.5}}, new ConcreteType<OpaqueMap>()).delegate, equals({'test': 1, 'This':[1,2,3], 'Something': {'a': 4.5}}));
+      expect(
+          decode({
+            'test': 1,
+            'This': [1, 2, 3],
+            'Something': {'a': 4.5}
+          }, new ConcreteType<OpaqueMap>())
+              .delegate,
+          equals({
+            'test': 1,
+            'This': [1, 2, 3],
+            'Something': {'a': 4.5}
+          }));
     });
     test('Can encode opaque lists', () {
-      var originalType = new OpaqueList(['a',1.5, {'a':'foo'}]);
-      expect(encode(originalType), equals(['a',1.5, {'a':'foo'}]));
+      final originalType = new OpaqueList([
+        'a',
+        1.5,
+        {'a': 'foo'}
+      ]);
+      expect(
+          encode(originalType),
+          equals([
+            'a',
+            1.5,
+            {'a': 'foo'}
+          ]));
     });
     test('Can decode opaque lists', () {
-      expect(decode(['a',1.5, {'a':'foo'}], new ConcreteType<OpaqueList>()).delegate, equals(['a',1.5, {'a':'foo'}]));
+      expect(
+          decode([
+            'a',
+            1.5,
+            {'a': 'foo'}
+          ], new ConcreteType<OpaqueList>())
+              .delegate,
+          equals([
+            'a',
+            1.5,
+            {'a': 'foo'}
+          ]));
     });
-
   });
 }
 
+// ignore: public_member_api_docs
 class Foo {
   @Field()
+  // ignore: public_member_api_docs
   String foo;
   @Field()
+  // ignore: public_member_api_docs
   int bar;
   @Field()
+  // ignore: public_member_api_docs
   List<String> buzz;
 }
 
+// ignore: public_member_api_docs
 class NestedType {
-  @Field(model: '_id') String id;
-  @Field(model: 'Foos') Map<String, Foo> foos;
+  // ignore: public_member_api_docs
+  @Field(model: '_id')
+  String id;
+  // ignore: public_member_api_docs
+  @Field(model: 'Foos')
+  Map<String, Foo> foos;
 }
 
+// ignore: public_member_api_docs
 class GenericType<T> {
-  @Field() T any;
+  // ignore: public_member_api_docs
+  @Field()
+  T any;
 }
 
-class GenericReified extends GenericType<Foo> {
-}
+// ignore: public_member_api_docs
+class GenericReified extends GenericType<Foo> {}
 
+// ignore: public_member_api_docs
 class GetterAndSetter {
   String _foo;
-  @Field() String get foo => _foo;
-  @Field() void set foo(String value) {
+  // ignore: unnecessary_getters_setters, public_member_api_docs
+  @Field()
+  String get foo => _foo;
+  // ignore: unnecessary_getters_setters, public_member_api_docs
+  @Field()
+  void set foo(String value) {
     _foo = value;
   }
 }
 
+// ignore: public_member_api_docs
 class FinalField {
   @Field()
+  // ignore: public_member_api_docs
   final String foo;
 
+  // ignore: public_member_api_docs
   FinalField(@Field() this.foo);
 }
 
+// ignore: public_member_api_docs
 class ExtendedField {
-  @FieldInheritance('noValue') int foo;
+  // ignore: public_member_api_docs
+  @FieldInheritance('noValue')
+  int foo;
 }
 
+// ignore: public_member_api_docs
 class FieldInheritance extends Field {
+  // ignore: public_member_api_docs
   final String notUsed;
+  // ignore: public_member_api_docs
   const FieldInheritance(this.notUsed) : super(model: '_id');
 }
 
-class ConcreteTypeGenericTypeInt extends ConcreteType<GenericType<int>> {}
-
+// ignore: public_member_api_docs
 class ConcreteTypeExpander<T1> {
+  // ignore: public_member_api_docs
   final ConcreteType<List<T1>> delegate = new ConcreteType<List<T1>>();
 }
 
-class ConcreteTypeSub<T2> extends ConcreteType<List<T2>> {}
-
+// ignore: public_member_api_docs
 class ConcreteTypeSubExpander<T3> {
-  final ConcreteTypeSub<List<T3>> delegate = new ConcreteTypeSub<List<T3>>();
+  // ignore: public_member_api_docs
+  final ConcreteType<List<List<T3>>> delegate =
+      new ConcreteType<List<List<T3>>>();
 }
 
-class ConcreteTypeSubSub<T4> extends ConcreteTypeSub<List<T4>> {}
-
+// ignore: public_member_api_docs
 class ConcreteTypeSubSubExpander<T5> {
-  final ConcreteTypeSubSub<List<T5>> delegate = new ConcreteTypeSubSub<List<T5>>();
+  // ignore: public_member_api_docs
+  final ConcreteType<List<List<List<T5>>>> delegate =
+      new ConcreteType<List<List<List<T5>>>>();
 }
 
+// ignore: public_member_api_docs
 class IndirectType {
-  @Field() int id;
+  // ignore: public_member_api_docs
+  @Field()
+  int id;
 }

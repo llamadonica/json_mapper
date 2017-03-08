@@ -1,4 +1,4 @@
-library static_mapper_factory;
+library json_mapper.static_mapper_factory;
 
 import 'dart:convert';
 import 'package:json_mapper/src/abstract_mapper_factory.dart';
@@ -6,15 +6,11 @@ import 'package:json_mapper/json_mapper.dart';
 import 'package:json_mapper/metadata.dart';
 import 'package:json_mapper/src/builder_field_mapper.dart';
 
-///get the raw value for a field
-typedef E StaticFieldGetter<T, E>(T obj);
+/// Get the raw value for a field
+typedef E FieldGetter<T, E>(T obj);
 
-///set the raw value for a field.
+/// Set the raw value for a field.
 typedef void FieldSetter<T, E>(T obj, E value);
-
-abstract class MapperConfig<T, E, M extends Mapper<T, E>> {
-  M instantiateMapper(MapperFactory mapperFactory);
-}
 
 Mapper/*<S,E>*/ _createMapper/*<S, E>*/(Type type, dynamic typeSentry) {
   if (!_types.containsKey(type)) {
@@ -24,12 +20,18 @@ Mapper/*<S,E>*/ _createMapper/*<S, E>*/(Type type, dynamic typeSentry) {
   return _types[type] as Mapper/*<S,E>*/;
 }
 
+/// A mixin for [Mapper] that uses the `_createMapper` found in this library.
 abstract class StaticMapper<T, E> implements Mapper<T, E> {
-  Mapper/*<S,E>*/ createMapper/*<S, E>*/(Type type, dynamic/*=S*/typeSentry) => _createMapper/*<S,E>*/(type, typeSentry);
+  /// Create the static [Mapper] for a type that will be used within all
+  /// static mappers.
+  Mapper/*<S,E>*/ createMapper/*<S, E>*/(Type type, dynamic/*=S*/ typeSentry) =>
+      _createMapper/*<S,E>*/(type, typeSentry);
 }
 
+/// A [BuilderFieldMapper] with [StaticMapper].
 class StaticFieldMapper<T> extends BuilderFieldMapper<T>
     with StaticMapper<T, Map<String, dynamic>> {
+  /// Created a new [StaticFieldMapper] object.
   StaticFieldMapper(
       {List<String> positionalArgs,
       List<String> namedArgs,
@@ -60,6 +62,7 @@ class StaticFieldMapper<T> extends BuilderFieldMapper<T>
             createModel);
 }
 
+/// The [StaticMapper] used for [List] types.
 class StaticListMapper<T> extends Mapper<List<T>, List<dynamic>>
     with StaticMapper<List<T>, List<dynamic>> {
   final Type _innerType = T;
@@ -92,11 +95,10 @@ class StaticListMapper<T> extends Mapper<List<T>, List<dynamic>>
   }
 }
 
+/// The [StaticMapper] used for [Map] types.
 class StaticMapMapper<V> extends Mapper<Map<String, V>, Map<String, dynamic>>
     with StaticMapper<Map<String, V>, Map<String, dynamic>> {
   final Type _innerType = V;
-
-  StaticMapMapper();
 
   @override
   Map<String, V> typeFactory(Map<String, dynamic> data,
@@ -120,8 +122,8 @@ class StaticMapMapper<V> extends Mapper<Map<String, V>, Map<String, dynamic>>
   void decoder(Map<String, V> obj, Object data, FieldDecoder fieldDecoder,
       Map<Type, Codec> typeCodecs,
       [Type type]) {
-    var valueType = _innerType;
-    var mapper = createMapper/*<V,dynamic>*/(valueType, null);
+    final valueType = _innerType;
+    final mapper = createMapper/*<V,dynamic>*/(valueType, null);
     (data as Map).forEach((key, value) {
       obj[key] = mapper.typeFactory(value, fieldDecoder, typeCodecs, valueType);
       mapper.decoder(obj[key], value, fieldDecoder, typeCodecs, valueType);
@@ -129,6 +131,8 @@ class StaticMapMapper<V> extends Mapper<Map<String, V>, Map<String, dynamic>>
   }
 }
 
+/// The [StaticMapper] used for types such as [int], [double], [String], etc.,
+/// which have a representation in json.
 class StaticNotEncodableMapper<T> extends Mapper<T, dynamic>
     with StaticMapper<T, dynamic> {
   final Type _thisType = T;
@@ -138,7 +142,8 @@ class StaticNotEncodableMapper<T> extends Mapper<T, dynamic>
       [Type type]) {}
 
   @override
-  encoder(T obj, FieldEncoder fieldEncoder, Map<Type, Codec> typeCodecs) =>
+  dynamic encoder(
+          T obj, FieldEncoder fieldEncoder, Map<Type, Codec> typeCodecs) =>
       (typeCodecs[_thisType]?.encode ?? _id)(obj);
 
   @override
@@ -148,22 +153,24 @@ class StaticNotEncodableMapper<T> extends Mapper<T, dynamic>
   dynamic/*=F*/ _id/*<F>*/(dynamic/*=F*/ obj) => obj;
 }
 
-
-final Map<Type, StaticMapper<dynamic,dynamic>> _invariants = {
-  String: new StaticNotEncodableMapper(),
-  int: new StaticNotEncodableMapper(),
-  double: new StaticNotEncodableMapper(),
-  num: new StaticNotEncodableMapper(),
-  bool: new StaticNotEncodableMapper(),
-  Object: new StaticNotEncodableMapper(),
-  Null: new StaticNotEncodableMapper()
+final Map<Type, StaticMapper<dynamic, dynamic>> _invariants = {
+  String: new StaticNotEncodableMapper<String>(),
+  int: new StaticNotEncodableMapper<int>(),
+  double: new StaticNotEncodableMapper<double>(),
+  num: new StaticNotEncodableMapper<num>(),
+  bool: new StaticNotEncodableMapper<bool>(),
+  Object: new StaticNotEncodableMapper<Object>(),
+  Null: new StaticNotEncodableMapper<Null>(),
+  DateTime: new StaticNotEncodableMapper<DateTime>()
 };
 
-
 Map<Type, StaticMapper> _types;
+
+/// Bootstrap the static mapper function with eh list of static types that the
+/// user will need.
 void staticBootstrapMapper(Map<Type, StaticMapper> types) {
-  _types = new Map<Type,StaticMapper>.from(types);
-  _invariants.forEach((t,mapper) {
+  _types = new Map<Type, StaticMapper>.from(types);
+  _invariants.forEach((t, mapper) {
     if (!_types.containsKey(t)) {
       _types[t] = mapper;
     }

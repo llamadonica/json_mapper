@@ -21,4 +21,4 @@ dev_dependencies:
 transformers:
 - json_mapper
 - test/pub_serve:
-    $include: test/mapper_test{.*,}.dart
+    $include: test/mapper_test.dart

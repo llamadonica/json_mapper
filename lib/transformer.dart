@@ -1,4 +1,4 @@
-library json_mapper_transformer;
+library json_mapper.transformer;
 
 import 'dart:collection';
 import 'dart:io';
@@ -13,36 +13,32 @@ import 'package:barback/barback.dart';
 import 'package:source_maps/refactor.dart' show TextEditTransaction;
 import 'package:path/path.dart' as path;
 
-/**
- * The redstone_mapper transformer, which replaces the default
- * mapper implementation, that relies on the mirrors API, by a
- * static implementation, that uses data extracted at compile
- * time.
- *
- */
 class _Ref<T> {
   T value;
   _Ref(this.value);
 }
 
+/// The json_mapper transformer, which replaces the default dynamic
+/// implementation of json_mapper with a static implementation.
 class StaticMapperGenerator extends Transformer with ResolverTransformer {
-  ClassElement objectType;
-  ClassElement mapClass;
-  ClassElement listClass;
-  DynamicTypeImpl dynamicType;
+  ClassElement _objectType;
+  ClassElement _mapClass;
+  ClassElement _listClass;
+  DynamicTypeImpl _dynamicType;
 
-  _CollectionType collectionType;
-  ClassElement fieldAnnotationClass;
-  ClassElement concreteTypeBaseClass;
+  _CollectionType _collectionType;
+  ClassElement _fieldAnnotationClass;
+  ClassElement _concreteTypeBaseClass;
 
-  final _UsedLibs usedLibs = new _UsedLibs();
-  final Map<String, _ConfigGenerator> types = {};
-  final Queue<_Specialization> specializations = new Queue<_Specialization>();
-  final HashSet<String> specializationKeys = new HashSet<String>();
-  final HashSet<String> implementedSpecializations = new HashSet<String>();
+  final _UsedLibs _usedLibs = new _UsedLibs();
+  final Map<String, _ConfigGenerator> _types = {};
+  final Queue<_Specialization> _specializations = new Queue<_Specialization>();
+  final HashSet<String> _specializationKeys = new HashSet<String>();
+  final HashSet<String> _implementedSpecializations = new HashSet<String>();
 
   String _mapperLibPrefix;
 
+  /// Vreates
   StaticMapperGenerator.asPlugin(BarbackSettings settings) {
     var sdkDir = settings.configuration["dart_sdk"];
     if (sdkDir == null) {
@@ -53,52 +49,52 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
   }
 
   @override
-  applyResolver(Transform transform, Resolver resolver) {
-    fieldAnnotationClass = resolver.getType("json_mapper_metadata.Field");
+  void applyResolver(Transform transform, Resolver resolver) {
+    _fieldAnnotationClass = resolver.getType("json_mapper.metadata.Field");
 
-    if (fieldAnnotationClass == null) {
+    if (_fieldAnnotationClass == null) {
       //mapper is not being used
       transform.addOutput(transform.primaryInput);
       return;
     }
 
-    var dynamicApp =
-        resolver.getLibraryFunction('dynamic_mapper_factory.bootstrapMapper');
+    final dynamicApp = resolver.getLibraryFunction(
+        'json_mapper.dynamic_mapper_factory.bootstrapMapper');
 
-    concreteTypeBaseClass =
-        resolver.getType("json_mapper_metadata.ConcreteType");
+    _concreteTypeBaseClass =
+        resolver.getType("json_mapper.metadata.ConcreteType");
     if (dynamicApp == null) {
       // No dynamic mapper imports, exit.
       transform.addOutput(transform.primaryInput);
       return;
     }
 
-    objectType = resolver.getType("dart.core.Object");
-    dynamicType = DynamicTypeImpl.instance;
-    mapClass = resolver.getType('dart.core.Map');
-    listClass = resolver.getType('dart.core.List');
+    _objectType = resolver.getType("dart.core.Object");
+    _dynamicType = DynamicTypeImpl.instance;
+    _mapClass = resolver.getType('dart.core.Map');
+    _listClass = resolver.getType('dart.core.List');
 
-    collectionType = new _CollectionType(resolver);
-    _mapperLibPrefix = usedLibs
-        .resolveLib(resolver.getLibraryByName("dynamic_mapper_factory"));
+    _collectionType = new _CollectionType(resolver);
+    _mapperLibPrefix = _usedLibs.resolveLib(
+        resolver.getLibraryByName("json_mapper.dynamic_mapper_factory"));
 
     var typesThatNeedToBeRevisited =
         new HashSet<_GenericClassCreatingConcreteType>();
 
     final concreteToSpecialization = new _ConcreteTypeToSpecialization(
-        usedLibs,
-        specializations,
-        objectType.type,
-        specializationKeys,
+        _usedLibs,
+        _specializations,
+        _objectType.type,
+        _specializationKeys,
         typesThatNeedToBeRevisited,
-        concreteTypeBaseClass);
+        _concreteTypeBaseClass);
 
     resolver.libraries
         .expand((lib) => lib.units)
         .forEach((unit) => unit.computeNode().accept(concreteToSpecialization));
 
     while (typesThatNeedToBeRevisited.isNotEmpty) {
-      var revisitingTypesMap =
+      final revisitingTypesMap =
           new HashMap<ClassElement, List<_GenericClassCreatingConcreteType>>();
       typesThatNeedToBeRevisited.forEach((element) =>
           (revisitingTypesMap[element.classElement] ??=
@@ -108,10 +104,10 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
           new HashSet<_GenericClassCreatingConcreteType>();
       final secondOrderConcreteTypeToSpecialization =
           new _SecondOrderTypeSpecialization(
-              usedLibs,
-              specializations,
-              objectType.type,
-              specializationKeys,
+              _usedLibs,
+              _specializations,
+              _objectType.type,
+              _specializationKeys,
               typesThatNeedToBeRevisited,
               revisitingTypesMap);
 
@@ -120,9 +116,9 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     }
 
     HashSet<ClassElement> classesToScan = new HashSet<ClassElement>.from(
-        specializations
-            .where((spec) =>
-                !implementedSpecializations.contains(spec.fullySpecializedForm))
+        _specializations
+            .where((spec) => !_implementedSpecializations
+                .contains(spec.fullySpecializedForm))
             .map((spec) => spec.genericClass));
     while (classesToScan.isNotEmpty) {
       resolver.libraries
@@ -130,9 +126,9 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
           .expand((unit) => unit.types)
           .forEach(
               (ClassElement clazz) => _preScannClass(clazz, classesToScan));
-      classesToScan = new HashSet<ClassElement>.from(specializations
+      classesToScan = new HashSet<ClassElement>.from(_specializations
           .where((spec) =>
-              !implementedSpecializations.contains(spec.fullySpecializedForm))
+              !_implementedSpecializations.contains(spec.fullySpecializedForm))
           .map((spec) => spec.genericClass));
     }
 
@@ -152,14 +148,14 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     final outputPath = path.url.join(path.url.dirname(id.path), outputFilename);
     final generatedAssetId = new AssetId(id.package, outputPath);
 
-    String typesSource = types.toString();
+    final String typesSource = _types.toString();
 
-    StringBuffer source = new StringBuffer();
+    final StringBuffer source = new StringBuffer();
     _writeHeader(transform.primaryInput.id, source);
-    usedLibs.libs.forEach((lib) {
+    _usedLibs.libs.forEach((lib) {
       if (lib.isDartCore) return;
-      var uri = resolver.getImportUri(lib, from: generatedAssetId);
-      source.write("import '$uri' as ${usedLibs.prefixes[lib]};\n");
+      final uri = resolver.getImportUri(lib, from: generatedAssetId);
+      source.write("import '$uri' as ${_usedLibs.prefixes[lib]};\n");
     });
     _writePreamble(source);
     source.write(typesSource);
@@ -172,20 +168,20 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       if (directive is ImportDirective &&
           directive.uri.stringValue ==
               'package:json_mapper/mapper_factory.dart') {
-        var uri = directive.uri;
+        final uri = directive.uri;
         transaction.edit(uri.beginToken.offset, uri.end,
             '\'package:json_mapper/src/static_mapper.dart\'');
       }
     }
 
-    var dynamicToStatic =
+    final dynamicToStatic =
         new _MapperDynamicToStaticVisitor(dynamicApp, transaction);
     unit.accept(dynamicToStatic);
 
     _addImport(transaction, unit, outputFilename, 'generated_static_mapper');
 
-    var printer = transaction.commit();
-    var url = id.path.startsWith('lib/')
+    final printer = transaction.commit();
+    final url = id.path.startsWith('lib/')
         ? 'package:${id.package}/${id.path.substring(4)}'
         : id.path;
     printer.build(url);
@@ -198,12 +194,11 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     source.write("library ${id.package}.$libName.generated_static_mapper;\n");
     source.write(
         "import 'package:json_mapper/metadata.dart' as $_mapperLibPrefix;\n\n");
-    source
-        .write("import 'package:json_mapper/src/static_mapper.dart';\n\n");
+    source.write("import 'package:json_mapper/src/static_mapper.dart';\n\n");
   }
 
   void _writePreamble(StringBuffer source) {
-    var defaultField = "const $_mapperLibPrefix.Field()";
+    final defaultField = "const $_mapperLibPrefix.Field()";
 
     source.write(
         "_encodeField(data, fieldName, mapper, value, fieldEncoder, typeCodecs, type, \n");
@@ -245,40 +240,41 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
   /// Injects an import into the list of imports in the file.
   void _addImport(TextEditTransaction transaction, CompilationUnit unit,
       String uri, String prefix) {
-    var last = unit.directives.where((d) => d is ImportDirective).last;
+    final last = unit.directives.where((d) => d is ImportDirective).last;
     transaction.edit(last.end, last.end, '\nimport \'$uri\' as $prefix;');
   }
 
-  _preScannClass(ClassElement clazz, HashSet<ClassElement> classesToScan,
+  void _preScannClass(ClassElement clazz, HashSet<ClassElement> classesToScan,
       [_Ref<int> fields,
       Set<ClassElement> cache,
       List<List<DartType>> specificsToImplement]) {
-    bool rootType = fields == null;
+    final rootType = fields == null;
     if (rootType && !classesToScan.contains(clazz)) return;
     fields ??= new _Ref<int>(0);
     cache ??= new Set<ClassElement>();
 
     cache.add(clazz);
     if (specificsToImplement == null) {
-      final specializationsToImplement = specializations
+      final specializationsToImplement = _specializations
           .where((spec) =>
-              !implementedSpecializations.contains(spec.fullySpecializedForm) &&
+              !_implementedSpecializations
+                  .contains(spec.fullySpecializedForm) &&
               spec.genericClass == clazz)
           .toList();
 
-      implementedSpecializations.addAll(
+      _implementedSpecializations.addAll(
           specializationsToImplement.map((spec) => spec.fullySpecializedForm));
       specificsToImplement ??=
           specializationsToImplement.map((spec) => spec.typeArguments).toList();
     }
 
-    if (clazz == listClass) {
+    if (clazz == _listClass) {
       for (var specialization in specificsToImplement) {
         _addTypeSpecialization(specialization[0]);
       }
       return;
     }
-    if (clazz == mapClass) {
+    if (clazz == _mapClass) {
       for (var specialization in specificsToImplement) {
         _addTypeSpecialization(specialization[1]);
       }
@@ -286,9 +282,8 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     }
 
     if (clazz.supertype != null &&
-        clazz.supertype.element != objectType &&
+        clazz.supertype.element != _objectType &&
         !cache.contains(clazz.supertype.element)) {
-
       final innerSpecializations = specificsToImplement
           .map((typeArgs) => _replaceType(
                   clazz.supertype,
@@ -301,6 +296,19 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       _preScannClass(clazz.supertype.element, classesToScan, fields, cache,
           innerSpecializations);
     }
+    clazz.mixins.where((i) => !cache.contains(i.element)).forEach((i) {
+      final innerSpecializations = specificsToImplement
+          .map((typeArgs) => _replaceType(
+                  i,
+                  new Map.fromIterables(
+                      clazz.typeParameters.map((tp) => tp.type), typeArgs))
+              .typeParameters
+              .map((tpe) => tpe.type)
+              .toList())
+          .toList();
+      _preScannClass(
+          i.element, classesToScan, fields, cache, innerSpecializations);
+    });
     clazz.interfaces.where((i) => !cache.contains(i.element)).forEach((i) {
       final innerSpecializations = specificsToImplement
           .map((typeArgs) => _replaceType(
@@ -331,15 +339,15 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
   }
 
   void _scannClassTop(ClassElement clazz) {
-    var genericsToInstantiate = specializations
+    final genericsToInstantiate = _specializations
         .where((spec) => spec.genericClass == clazz)
         .map((spec) => spec.typeArguments)
         .toList();
     final bool forceImplement = genericsToInstantiate.length != 0;
     if (!genericsToInstantiate
-        .any((spec) => !spec.any((t) => t != dynamicType))) {
+        .any((spec) => !spec.any((t) => t != _dynamicType))) {
       genericsToInstantiate
-          .add(clazz.typeParameters.map((_) => dynamicType).toList());
+          .add(clazz.typeParameters.map((_) => _dynamicType).toList());
     }
     genericsToInstantiate.forEach((genericToInstantiate) =>
         _scannClass(clazz, genericToInstantiate, forceImplement));
@@ -353,8 +361,9 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       Map<String, int> fieldIdxs,
       Map<String, int> accessorIdxs,
       Map<String, int> constructorParameterIdxs]) {
-    bool rootType = fields == null;
-    print('>>> Scanning ${clazz.displayName} over <${specialization.join(',')}>');
+    final bool rootType = fields == null;
+    print(
+        '>>> Scanning ${clazz.displayName} over <${specialization.join(',')}>');
 
     fields ??= <_FieldInfo>[];
     constructorParameters ??= <_FieldInfo>[];
@@ -373,28 +382,27 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
           clazz.type,
           new Map.fromIterables(
               clazz.typeParameters.map((tp) => tp.type), specialization));
-      resolvedTypeName = getTypeName(type, dynamicType, usedLibs);
+      resolvedTypeName = _globalGetTypeName(type, _dynamicType, _usedLibs);
       key = resolvedTypeName.contains('<')
           ? 'new $_mapperLibPrefix.ConcreteType<$resolvedTypeName>().type'
           : resolvedTypeName;
     };
 
-    if (clazz == listClass && rootType) {
+    if (clazz == _listClass && rootType) {
       resolveKey();
-      types[key] = new _ListMapperConfigGenerator(
-          specialization[0], objectType.type, usedLibs);
+      _types[key] = new _ListMapperConfigGenerator(
+          specialization[0], _objectType.type, _usedLibs);
       return;
     }
-    if (clazz == mapClass && rootType) {
+    if (clazz == _mapClass && rootType) {
       resolveKey();
-      types[key] = new _MapMapperConfigGenerator(
-          specialization[1], objectType.type, usedLibs);
+      _types[key] = new _MapMapperConfigGenerator(
+          specialization[1], _objectType.type, _usedLibs);
       return;
     }
     if (clazz.supertype != null &&
-        clazz.supertype.element != objectType &&
+        clazz.supertype.element != _objectType &&
         !cache.contains(clazz.supertype.element)) {
-      print('>>>> ${clazz.displayName} isa ${clazz.supertype}');
       final innerSpecializations = _replaceType(
               clazz.supertype,
               new Map.fromIterables(
@@ -405,6 +413,17 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       _scannClass(clazz.supertype.element, innerSpecializations, forceImplement,
           fields, [], cache, fieldIdxs, accessorIdxs, {});
     }
+    clazz.mixins.where((i) => !cache.contains(i.element)).forEach((i) {
+      final innerSpecializations = _replaceType(
+              i,
+              new Map.fromIterables(
+                  clazz.typeParameters.map((tp) => tp.type), specialization))
+          .typeParameters
+          .map((tpe) => tpe.type)
+          .toList();
+      _scannClass(i.element, innerSpecializations, forceImplement, fields, [],
+          cache, fieldIdxs, accessorIdxs, {});
+    });
 
     clazz.interfaces.where((i) => !cache.contains(i.element)).forEach((i) {
       final innerSpecializations = _replaceType(
@@ -433,19 +452,19 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
             constructorParameterIdxs, specialization, clazz));
       });
 
-      types[key] = new _FieldMapperConfigGenerator(
-          collectionType,
-          usedLibs,
+      _types[key] = new _FieldMapperConfigGenerator(
+          _collectionType,
+          _usedLibs,
           resolvedTypeName,
           fields,
           constructorParameters,
           resolvedTypeName,
-          objectType.type,
+          _objectType.type,
           _mapperLibPrefix);
     } else if (rootType && forceImplement) {
       resolveKey();
-      types[key] =
-          new _NotEncodableConfigGenerator(type, objectType.type, usedLibs);
+      _types[key] =
+          new _NotEncodableConfigGenerator(type, _objectType.type, _usedLibs);
     }
   }
 
@@ -461,7 +480,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       return [];
     }
 
-    var char = source[idx];
+    final char = source[idx];
     if (char == ")") {
       source = source.substring(0, idx + 1);
     } else {
@@ -479,11 +498,11 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
 
   bool _isFieldConstructor(ElementAnnotation m) =>
       m.element is ConstructorElement &&
-      (m.element.enclosingElement == fieldAnnotationClass ||
+      (m.element.enclosingElement == _fieldAnnotationClass ||
           (m.element.enclosingElement as ClassElement)
               .allSupertypes
               .map((i) => i.element)
-              .contains(fieldAnnotationClass));
+              .contains(_fieldAnnotationClass));
 
   _FieldMetadata _buildMetadata(Element element, [bool isInitializer = false]) {
     String source;
@@ -493,26 +512,26 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       source = element.computeNode().toSource();
     }
 
-    List<String> args =
+    final List<String> args =
         _extractArgs(source, element.displayName, isInitializer);
 
     String fieldExp;
-    List<String> exps = [];
+    final List<String> exps = [];
 
     int idx = 0;
     for (ElementAnnotation m in element.metadata) {
-      var prefix = usedLibs.resolveLib(m.element.library);
+      var prefix = _usedLibs.resolveLib(m.element.library);
       if (prefix.isNotEmpty) {
         prefix += ".";
       }
 
       if (m.element is ConstructorElement) {
-        var className = m.element.enclosingElement.displayName;
+        final className = m.element.enclosingElement.displayName;
         var constructor = m.element.displayName;
         if (constructor.isNotEmpty) {
           constructor = ".$constructor";
         }
-        var exp = "const $prefix$className$constructor${args[idx]}";
+        final exp = "const $prefix$className$constructor${args[idx]}";
         exps.add(exp);
         if (fieldExp == null && _isFieldConstructor(m)) {
           fieldExp = exp;
@@ -527,13 +546,13 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     return new _FieldMetadata(fieldExp, exps);
   }
 
-  _scannParameter(
+  void _scannParameter(
       List<_FieldInfo> constructorParameters,
       ParameterElement element,
       Map<String, int> constructorParameterIdxs,
       List<DartType> specialization,
       ClassElement clazz) {
-    var metadata = _buildMetadata(element, true);
+    final metadata = _buildMetadata(element, true);
     final type = _replaceTypeOuter(
         element.type,
         new Map.fromIterables(
@@ -546,9 +565,9 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     }
   }
 
-  _prescannField(_Ref<int> fields, ClassElement clazz, VariableElement element,
-      List<List<DartType>> specificsToImplement) {
-    var field = element.metadata
+  void _prescannField(_Ref<int> fields, ClassElement clazz,
+      VariableElement element, List<List<DartType>> specificsToImplement) {
+    final field = element.metadata
         .firstWhere((f) => _isFieldConstructor(f), orElse: () => null);
     if (field != null) {
       fields.value++;
@@ -566,14 +585,14 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     }
   }
 
-  _addTypeSpecialization(DartType typeToSpecialize) {
+  void _addTypeSpecialization(DartType typeToSpecialize) {
     if (typeToSpecialize is ParameterizedType) {
-      final underlyingType = getShortTypeName(typeToSpecialize, usedLibs);
+      final underlyingType = _getShortTypeName(typeToSpecialize, _usedLibs);
       final qualifiedType =
-          getTypeName(typeToSpecialize, objectType.type, usedLibs);
-      if (!specializationKeys.contains(qualifiedType)) {
-        specializationKeys.add(qualifiedType);
-        specializations.add(new _Specialization(typeToSpecialize.element,
+          _globalGetTypeName(typeToSpecialize, _objectType.type, _usedLibs);
+      if (!_specializationKeys.contains(qualifiedType)) {
+        _specializationKeys.add(qualifiedType);
+        _specializations.add(new _Specialization(typeToSpecialize.element,
             underlyingType, qualifiedType, typeToSpecialize.typeArguments));
       }
     }
@@ -585,15 +604,15 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       Map<String, int> fieldIdxs,
       List<DartType> specialization,
       ClassElement clazz) {
-    var field = element.metadata
+    final field = element.metadata
         .firstWhere((f) => _isFieldConstructor(f), orElse: () => null);
     if (field != null) {
-      var idx = fieldIdxs[element.displayName];
+      final idx = fieldIdxs[element.displayName];
       if (idx != null) {
         fields.removeAt(idx);
       }
 
-      var metadata = _buildMetadata(element);
+      final metadata = _buildMetadata(element);
       final type = _replaceTypeOuter(
           element.type,
           new Map.fromIterables(
@@ -605,17 +624,17 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     }
   }
 
-  _prescannAccessor(
+  void _prescannAccessor(
       _Ref<int> fields,
       ClassElement clazz,
       PropertyAccessorElement element,
       List<List<DartType>> specificsToImplement) {
-    var field = element.metadata
+    final field = element.metadata
         .firstWhere((f) => _isFieldConstructor(f), orElse: () => null);
 
     if (field != null) {
       fields.value++;
-      DartType type = element.isSetter
+      final DartType type = element.isSetter
           ? (element.type.normalParameterTypes[0])
           : element.returnType;
       if (_getUnresolvedTypeParameters(type).isNotEmpty) {
@@ -638,10 +657,10 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       Map<String, int> accessorIdxs,
       List<DartType> specialization,
       ClassElement clazz) {
-    var field = element.metadata
+    final field = element.metadata
         .firstWhere((f) => _isFieldConstructor(f), orElse: () => null);
     if (field != null) {
-      var metadata = _buildMetadata(element);
+      final metadata = _buildMetadata(element);
       var name = element.displayName;
       var type;
       var idx;
@@ -691,7 +710,7 @@ abstract class _ConfigGenerator {
   _ConfigGenerator(this._objectType, this.usedLibs);
 
   String _getTypeName(DartType type) =>
-      getTypeName(type, _objectType, usedLibs);
+      _globalGetTypeName(type, _objectType, usedLibs);
 }
 
 class _FieldMapperConfigGenerator extends _ConfigGenerator {
@@ -715,8 +734,9 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
       this._mapperLibPrefix)
       : super(_objectType, usedLibs);
 
+  @override
   String toString() {
-    var source = new StringBuffer("new StaticFieldMapper<$key>(\n");
+    final source = new StringBuffer("new StaticFieldMapper<$key>(\n");
     _buildPositionalArgs(source);
     source.write(',\n');
     _buildNamedArgs(source);
@@ -876,7 +896,7 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
   }
 
   String _getOuterTypeName(DartType type) {
-    var typeName = _getTypeName(type);
+    final typeName = _getTypeName(type);
     if (!typeName.contains('<')) {
       return typeName;
     }
@@ -918,7 +938,7 @@ class _NotEncodableConfigGenerator extends _ConfigGenerator {
       'new StaticNotEncodableMapper<${_getTypeName(thisType)}>()';
 }
 
-String getShortTypeName(DartType type, _UsedLibs usedLibs) {
+String _getShortTypeName(DartType type, _UsedLibs usedLibs) {
   String typePrefix = "";
   String typeName;
 
@@ -933,7 +953,8 @@ String getShortTypeName(DartType type, _UsedLibs usedLibs) {
   return typeName;
 }
 
-String getTypeName(DartType type, DartType objectType, _UsedLibs usedLibs) {
+String _globalGetTypeName(
+    DartType type, DartType objectType, _UsedLibs usedLibs) {
   String typePrefix = "";
   String typeName;
   type = type.resolveToBound(objectType);
@@ -948,7 +969,7 @@ String getTypeName(DartType type, DartType objectType, _UsedLibs usedLibs) {
   }
   if (type is ParameterizedType && type.typeArguments.length > 0) {
     typeName =
-        '$typeName<${type.typeArguments.map((it) => getTypeName(it, objectType, usedLibs)).join(",")}>';
+        '$typeName<${type.typeArguments.map((it) => _globalGetTypeName(it, objectType, usedLibs)).join(",")}>';
   }
 
   return typeName;
@@ -1031,12 +1052,13 @@ class _MapperDynamicToStaticVisitor extends GeneralizingAstVisitor {
 
   _MapperDynamicToStaticVisitor(this.mapperDynamicFn, this.transaction);
 
-  visitMethodInvocation(MethodInvocation m) {
+  @override
+  void visitMethodInvocation(MethodInvocation m) {
     if (m.methodName.bestElement == mapperDynamicFn) {
       transaction.edit(m.methodName.beginToken.offset,
           m.methodName.endToken.end, 'staticBootstrapMapper');
 
-      var args = m.argumentList;
+      final args = m.argumentList;
       transaction.edit(args.beginToken.offset + 1, args.end - 1,
           'generated_static_mapper.types');
     }
@@ -1067,12 +1089,12 @@ abstract class _SpecializationVisitor extends GeneralizingAstVisitor<Null> {
       this.specializationKeys, this.classesToCheck);
 
   @override
-  visitInstanceCreationExpression(InstanceCreationExpression c) {
+  Null visitInstanceCreationExpression(InstanceCreationExpression c) {
     final staticType = c.staticType;
-    if (staticType is! ParameterizedType) return;
+    if (staticType is! ParameterizedType) return null;
     final normalizedTypes = _toConcreteTypes(c.staticElement, staticType);
     for (var normalizedType in normalizedTypes) {
-      var _unresolvedTypeParameters =
+      final _unresolvedTypeParameters =
           _getUnresolvedTypeParameters(normalizedType);
       if (_unresolvedTypeParameters.isNotEmpty) {
         classesToCheck.add(new _GenericClassCreatingConcreteType(
@@ -1080,7 +1102,7 @@ abstract class _SpecializationVisitor extends GeneralizingAstVisitor<Null> {
                 as ClassElement,
             _unresolvedTypeParameters.toList(),
             normalizedType));
-        return;
+        return null;
       }
 
       var typeToSpecialize =
@@ -1088,8 +1110,9 @@ abstract class _SpecializationVisitor extends GeneralizingAstVisitor<Null> {
       if (typeToSpecialize is ParameterizedType) {
         typeToSpecialize = typeToSpecialize.resolveToBound(objectType);
       }
-      final underlyingType = getShortTypeName(typeToSpecialize, usedLibs);
-      final qualifiedType = getTypeName(typeToSpecialize, objectType, usedLibs);
+      final underlyingType = _getShortTypeName(typeToSpecialize, usedLibs);
+      final qualifiedType =
+          _globalGetTypeName(typeToSpecialize, objectType, usedLibs);
       if (typeToSpecialize is InterfaceType) {
         if (!specializationKeys.contains(qualifiedType)) {
           specializationKeys.add(qualifiedType);
@@ -1098,6 +1121,7 @@ abstract class _SpecializationVisitor extends GeneralizingAstVisitor<Null> {
         }
       }
     }
+    return null;
   }
 
   Iterable<DartType> _toConcreteTypes(
@@ -1133,14 +1157,16 @@ class _SecondOrderTypeSpecialization extends _SpecializationVisitor {
       : super(usedLibs, specializations, objectType, specializationKeys,
             classesToCheck);
 
+  @override
   Iterable<DartType> _toConcreteTypes(
       ConstructorElement staticElement, ParameterizedType staticType) sync* {
     if (inputClasses.containsKey(staticElement.enclosingElement)) {
       yield* _resolveTypes(
           inputClasses[staticElement.enclosingElement], staticType);
     }
-    for (var superClass in staticElement.enclosingElement.allSupertypes
-        .where((st) => inputClasses.containsKey(st.element))) {
+    for (var superClass
+        in _implementedSupertypes(staticElement.enclosingElement)
+            .where((st) => inputClasses.containsKey(st.element))) {
       final settledType = _replaceType(
           superClass,
           new Map<TypeParameterType, DartType>.fromIterables(
@@ -1186,6 +1212,7 @@ class _ConcreteTypeToSpecialization extends _SpecializationVisitor {
                 type.typeArguments));
   }
 
+  @override
   Iterable<DartType> _toConcreteTypes(
       ConstructorElement element, ParameterizedType type) sync* {
     final result = _toConcreteType(element, type);
@@ -1195,7 +1222,10 @@ class _ConcreteTypeToSpecialization extends _SpecializationVisitor {
 
 /// Similar to the [allSupertypes] getter on [ClassElement] however, this
 /// only yields those supertypes where the subtypes inherit the methods
-/// from its superclasses (i.e., mixins and direct inheritance)
+/// from its superclasses (i.e., mixins and direct inheritance.)
+///
+/// TODO: Figure out where this should be used in lieu of the allSupertypes
+/// method.
 Iterable<InterfaceType> _implementedSupertypes(ClassElement c) sync* {
   if (c.supertype != null) yield c.supertype;
   yield* c.mixins;
@@ -1216,7 +1246,7 @@ DartType _replaceTypeOuter(
 ParameterizedType _replaceType(
     InterfaceType input, Map<TypeParameterType, DartType> types) {
   if (input == null) return null;
-  var outerParameters =
+  final outerParameters =
       input.typeArguments.map((arg) => _replaceTypeOuter(arg, types)).toList();
 
   return input.element.type.instantiate(outerParameters);
