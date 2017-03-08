@@ -3,6 +3,7 @@
 A slightly improved JSON mapper for Dart
 
 [![Build Status](https://travis-ci.org/llamadonica/json_mapper.svg?branch=master)](https://travis-ci.org/llamadonica/json_mapper)
+[![Coverage Status](https://coveralls.io/repos/github/llamadonica/json_mapper/badge.svg?branch=master)](https://coveralls.io/github/llamadonica/json_mapper?branch=master)
 
 ## Explanation
 
