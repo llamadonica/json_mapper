@@ -18,6 +18,10 @@ if [[ $(dartfmt -n --set-exit-if-changed lib/ test/) ]]; then
     exit 1
 fi
 
+export DISPLAY=:99.0
+sh -e /etc/init.d/xvfb start
+t=0; until (xdpyinfo -display :99 &>/dev/null || test $t -gt 10); do sleep 1; let t=$t+1; done
+
 echo "Running tests"
 pub run test
 
