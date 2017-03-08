@@ -26,7 +26,7 @@ echo "Running tests"
 pub run test
 
 echo "Running transformer tests"
-pub serve --port=8080 &>/dev/null &
+pub serve --port=8080 test &
 sleep 2
 pub run test --pub-serve=8080
 kill -SIGINT %1
