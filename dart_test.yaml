@@ -1,1 +1,1 @@
-platforms: [vm, chrome, firefox, content_shell]
+platforms: [vm, chrome, firefox, content-shell]
