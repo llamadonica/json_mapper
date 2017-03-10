@@ -4,7 +4,7 @@ description:
     doesn't require redstone so it can use somewhat relaxed dependencies. Also, unlike redstone_mapper,
     it can handle parameterized types. The API is mostly derived from the redstone_mapper, and it produces information
     that is slightly easier to modify, for example, to introspect on the generated fields.
-version: 0.0.1
+version: 0.1.0
 author: llamadonica@gmail.com
 #homepage: https://www.example.com
 

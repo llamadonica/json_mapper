@@ -39,5 +39,6 @@ if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
         --retry 2 \
         --exclude-test-files \
         --debug \
+        --token="$COVERALLS_TOKEN" \
         test/mapper_test.dart
 fi

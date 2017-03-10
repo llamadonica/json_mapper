@@ -76,7 +76,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
 
     _collectionType = new _CollectionType(resolver);
     _mapperLibPrefix = _usedLibs.resolveLib(
-        resolver.getLibraryByName("json_mapper.dynamic_mapper_factory"));
+        resolver.getLibraryByName("json_mapper.metadata"));
 
     var typesThatNeedToBeRevisited =
         new HashSet<_GenericClassCreatingConcreteType>();
@@ -362,8 +362,6 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       Map<String, int> accessorIdxs,
       Map<String, int> constructorParameterIdxs]) {
     final bool rootType = fields == null;
-    print(
-        '>>> Scanning ${clazz.displayName} over <${specialization.join(',')}>');
 
     fields ??= <_FieldInfo>[];
     constructorParameters ??= <_FieldInfo>[];
@@ -371,6 +369,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     fieldIdxs ??= <String, int>{};
     accessorIdxs ??= <String, int>{};
     constructorParameterIdxs ??= <String, int>{};
+
 
     cache.add(clazz);
 
@@ -437,6 +436,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
           cache, fieldIdxs, accessorIdxs, {});
     });
 
+
     clazz.fields.where((f) => !f.isStatic && !f.isPrivate).forEach(
         (f) => _scannField(fields, f, fieldIdxs, specialization, clazz));
 
@@ -444,6 +444,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
         (p) => _scannAccessor(fields, p, accessorIdxs, specialization, clazz));
 
     if (rootType && fields.isNotEmpty) {
+      final metadata = _buildClassMetadata(clazz);
       resolveKey();
       clazz.constructors
           .where((constructor) => constructor.displayName == '')
@@ -460,7 +461,8 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
           constructorParameters,
           resolvedTypeName,
           _objectType.type,
-          _mapperLibPrefix);
+          _mapperLibPrefix,
+          metadata);
     } else if (rootType && forceImplement) {
       resolveKey();
       _types[key] =
@@ -504,6 +506,74 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
               .map((i) => i.element)
               .contains(_fieldAnnotationClass));
 
+  List<String> _buildClassMetadata(ClassElement clazz, [Set<ClassElement> cache]) {
+    cache ??= new Set<ClassElement>();
+    String source = clazz.computeNode().toSource();
+
+    cache.add(clazz);
+
+    final stringToScanFor = "class";
+
+    source =
+        source.substring(0, source.indexOf(new RegExp(stringToScanFor)));
+
+    var idx = source.lastIndexOf(new RegExp("[@\)]"));
+    if (idx == -1) {
+      return [];
+    }
+    print('$source');
+    final char = source[idx];
+    if (char == ")") {
+      source = source.substring(0, idx + 1);
+    } else {
+      idx = source.indexOf("\s", idx);
+      if (idx != -1) source = source.substring(0, idx);
+    }
+
+    final args = source.split(new RegExp(r"\s@")).map((m) {
+      if (m[m.length - 1] == ")") {
+        return m.substring(m.indexOf("("));
+      }
+      return m;
+    }).toList(growable: false);
+
+    final result = <String>[];
+    int metaIdx = 0;
+    for (ElementAnnotation m in clazz.metadata) {
+      print('> Resolving metadatum ${m.constantValue}');
+      var prefix = _usedLibs.resolveLib(m.element.library);
+      if (prefix.isNotEmpty) {
+        prefix += ".";
+      }
+
+      if (m.element is ConstructorElement) {
+        final className = m.element.enclosingElement.displayName;
+        var constructor = m.element.displayName;
+        if (constructor.isNotEmpty) {
+          constructor = ".$constructor";
+        }
+        final exp = "const $prefix$className$constructor${args[metaIdx]}";
+        result.add(exp);
+      } else {
+        result.add("$prefix${args[metaIdx]}");
+      }
+
+      metaIdx++;
+    }
+    if (clazz.supertype != null &&
+        clazz.supertype.element != _objectType &&
+        !cache.contains(clazz.supertype.element)) {
+      result.addAll(_buildClassMetadata(clazz.supertype.element, cache));
+    }
+    clazz.mixins.where((i) => !cache.contains(i.element)).forEach((i) {
+      result.addAll(_buildClassMetadata(i.element, cache));
+    });
+
+    clazz.interfaces.where((i) => !cache.contains(i.element)).forEach((i) {
+      result.addAll(_buildClassMetadata(i.element, cache));
+    });
+    return result;
+  }
   _FieldMetadata _buildMetadata(Element element, [bool isInitializer = false]) {
     String source;
     if (element is FieldElement) {
@@ -720,6 +790,7 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
   final String className;
   final List<_FieldInfo> fields;
   final List<_FieldInfo> constructorParameters;
+  final List<String> metadata;
 
   final String _mapperLibPrefix;
 
@@ -731,7 +802,7 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
       this.constructorParameters,
       this.key,
       InterfaceType _objectType,
-      this._mapperLibPrefix)
+      this._mapperLibPrefix, this.metadata)
       : super(_objectType, usedLibs);
 
   @override
@@ -762,6 +833,8 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
     _buildConstructorMetadataExp(source);
     source.write(',\n');
     _buildFactory(source);
+    source.write(',\n');
+    _buildMetadata(source);
     source.write(')');
     return source.toString();
   }
@@ -902,6 +975,10 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
     }
     return 'new $_mapperLibPrefix.ConcreteType<$typeName>().type';
   }
+
+  void _buildMetadata(StringBuffer source) {
+    source.write('  metadata: [${metadata.join(',')}]');
+  }
 }
 
 class _ListMapperConfigGenerator extends _ConfigGenerator {
@@ -943,6 +1020,7 @@ String _getShortTypeName(DartType type, _UsedLibs usedLibs) {
   String typeName;
 
   if (type.element != null && !type.isDynamic) {
+    print('> Resolving type ${type.displayName}');
     typePrefix = usedLibs.resolveLib(type.element.library);
   }
   if (typePrefix.isNotEmpty) {
@@ -960,6 +1038,7 @@ String _globalGetTypeName(
   type = type.resolveToBound(objectType);
 
   if (type.element != null && !type.isDynamic) {
+    print('> Resolving type ${type.displayName}');
     typePrefix = usedLibs.resolveLib(type.element.library);
   }
   if (typePrefix.isNotEmpty) {
@@ -983,7 +1062,8 @@ class _UsedLibs {
     libs.add(lib);
     var prefix = prefixes[lib];
     if (prefix == null) {
-      prefix = lib.isDartCore ? "" : "import_${prefixes.length}";
+      prefix = lib.isDartCore ? "" : "import_${prefixes.length + 1}";
+      print('${lib.getExtendedDisplayName('')} is ${prefixes.length + 1}');
       prefixes[lib] = prefix;
     }
     return prefix;

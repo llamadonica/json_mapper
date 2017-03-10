@@ -45,7 +45,8 @@ class StaticFieldMapper<T> extends BuilderFieldMapper<T>
       Map<String, List> getterMetadata,
       Map<String, List> setterMetadata,
       Map<String, List> constructorMetadata,
-      ModelFactory<T> createModel})
+      ModelFactory<T> createModel,
+      List metadata})
       : super(
             positionalArgs,
             namedArgs,
@@ -59,7 +60,7 @@ class StaticFieldMapper<T> extends BuilderFieldMapper<T>
             getterMetadata,
             setterMetadata,
             constructorMetadata,
-            createModel);
+            createModel,metadata);
 }
 
 /// The [StaticMapper] used for [List] types.

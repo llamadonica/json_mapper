@@ -400,6 +400,7 @@ class GenericType<T> {
 class GenericReified extends GenericType<Foo> {}
 
 // ignore: public_member_api_docs
+@Field()
 class GetterAndSetter {
   String _foo;
   // ignore: unnecessary_getters_setters, public_member_api_docs

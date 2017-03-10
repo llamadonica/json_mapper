@@ -163,7 +163,8 @@ class _DynamicFieldMapper<T> extends BuilderFieldMapper<T> {
       Map<String, List> getterMetadata,
       Map<String, List> setterMetadata,
       Map<String, List> constructorMetadata,
-      ModelFactory<T> createModel)
+      ModelFactory<T> createModel,
+      List metadata)
       : super(
             positionalArgs,
             namedArgs,
@@ -177,7 +178,7 @@ class _DynamicFieldMapper<T> extends BuilderFieldMapper<T> {
             getterMetadata,
             setterMetadata,
             constructorMetadata,
-            createModel);
+            createModel, metadata);
 
   @override
   Mapper/*<S,E>*/ createMapper/*<S,E>*/(Type type, dynamic/*=S*/ typeSentry) =>
@@ -242,6 +243,7 @@ Mapper/*<T,E>*/ _dynamicMapper/*<T,E>*/(Type type, dynamic objectMarker) {
                     key: (k) => new Symbol(k), value: (k) => namedArgs[k]))
             .reflectee as dynamic/*=T*/;
     final Map<String, _FieldData> fields = <String, _FieldData>{};
+    final List metadata = [];
 
     _buildChain(
         factoryPositionalArgs,
@@ -257,7 +259,7 @@ Mapper/*<T,E>*/ _dynamicMapper/*<T,E>*/(Type type, dynamic objectMarker) {
         setterMetadata,
         constructorMetadata,
         clazz as ClassMirror,
-        fields);
+        fields, metadata);
 
     if (fields.isEmpty) {
       mapper = new _NotEncodableMapper();
@@ -275,7 +277,7 @@ Mapper/*<T,E>*/ _dynamicMapper/*<T,E>*/(Type type, dynamic objectMarker) {
           getterMetadata,
           setterMetadata,
           constructorMetadata,
-          createModel);
+          createModel, metadata);
     }
     _cache[type] = mapper;
   }
@@ -297,6 +299,7 @@ void _buildChain/*<T,E>*/(
     Map<String, List> constructorMetadata,
     ClassMirror clazz,
     Map<String, _FieldData> fields,
+    List metadata,
     [bool isTopLevel = true]) {
   var superclass;
   try {
@@ -304,6 +307,7 @@ void _buildChain/*<T,E>*/(
   } catch (err) {
     superclass = null;
   }
+  metadata.addAll(clazz.metadata.map((im) => im.reflectee));
   if (superclass != null &&
       superclass.hasReflectedType &&
       clazz.superclass.reflectedType != Object) {
@@ -322,6 +326,7 @@ void _buildChain/*<T,E>*/(
         null,
         clazz.superclass,
         fields,
+        metadata,
         false);
   }
 
@@ -341,6 +346,7 @@ void _buildChain/*<T,E>*/(
         null,
         interface,
         fields,
+        metadata,
         false);
   });
 

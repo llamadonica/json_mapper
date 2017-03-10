@@ -29,6 +29,8 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
   final Map<String, List> _setterMetadata;
   final Map<String, List> _constructorMetadata;
   final ModelFactory<T> _createModel;
+  /// The metadata associated with the class itself.
+  final List metadata;
 
   /// Create a new object of type [BuilderFieldMapper] when called from a
   /// subtype.
@@ -45,7 +47,8 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
       this._getterMetadata,
       this._setterMetadata,
       this._constructorMetadata,
-      this._createModel);
+      this._createModel,
+      this.metadata);
 
   Iterable<_ChainFactory<Map<String, dynamic>, dynamic>>
       get _factoryPositionalArgs sync* {
