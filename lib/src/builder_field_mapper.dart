@@ -29,6 +29,7 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
   final Map<String, List> _setterMetadata;
   final Map<String, List> _constructorMetadata;
   final ModelFactory<T> _createModel;
+
   /// The metadata associated with the class itself.
   final List metadata;
 

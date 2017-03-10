@@ -178,7 +178,8 @@ class _DynamicFieldMapper<T> extends BuilderFieldMapper<T> {
             getterMetadata,
             setterMetadata,
             constructorMetadata,
-            createModel, metadata);
+            createModel,
+            metadata);
 
   @override
   Mapper/*<S,E>*/ createMapper/*<S,E>*/(Type type, dynamic/*=S*/ typeSentry) =>
@@ -259,7 +260,8 @@ Mapper/*<T,E>*/ _dynamicMapper/*<T,E>*/(Type type, dynamic objectMarker) {
         setterMetadata,
         constructorMetadata,
         clazz as ClassMirror,
-        fields, metadata);
+        fields,
+        metadata);
 
     if (fields.isEmpty) {
       mapper = new _NotEncodableMapper();
@@ -277,7 +279,8 @@ Mapper/*<T,E>*/ _dynamicMapper/*<T,E>*/(Type type, dynamic objectMarker) {
           getterMetadata,
           setterMetadata,
           constructorMetadata,
-          createModel, metadata);
+          createModel,
+          metadata);
     }
     _cache[type] = mapper;
   }

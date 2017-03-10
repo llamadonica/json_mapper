@@ -75,8 +75,8 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     _listClass = resolver.getType('dart.core.List');
 
     _collectionType = new _CollectionType(resolver);
-    _mapperLibPrefix = _usedLibs.resolveLib(
-        resolver.getLibraryByName("json_mapper.metadata"));
+    _mapperLibPrefix =
+        _usedLibs.resolveLib(resolver.getLibraryByName("json_mapper.metadata"));
 
     var typesThatNeedToBeRevisited =
         new HashSet<_GenericClassCreatingConcreteType>();
@@ -370,7 +370,6 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     accessorIdxs ??= <String, int>{};
     constructorParameterIdxs ??= <String, int>{};
 
-
     cache.add(clazz);
 
     DartType type;
@@ -435,7 +434,6 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
       _scannClass(i.element, innerSpecializations, forceImplement, fields, [],
           cache, fieldIdxs, accessorIdxs, {});
     });
-
 
     clazz.fields.where((f) => !f.isStatic && !f.isPrivate).forEach(
         (f) => _scannField(fields, f, fieldIdxs, specialization, clazz));
@@ -506,7 +504,8 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
               .map((i) => i.element)
               .contains(_fieldAnnotationClass));
 
-  List<String> _buildClassMetadata(ClassElement clazz, [Set<ClassElement> cache]) {
+  List<String> _buildClassMetadata(ClassElement clazz,
+      [Set<ClassElement> cache]) {
     cache ??= new Set<ClassElement>();
     String source = clazz.computeNode().toSource();
 
@@ -514,8 +513,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
 
     final stringToScanFor = "class";
 
-    source =
-        source.substring(0, source.indexOf(new RegExp(stringToScanFor)));
+    source = source.substring(0, source.indexOf(new RegExp(stringToScanFor)));
 
     var idx = source.lastIndexOf(new RegExp("[@\)]"));
     if (idx == -1) {
@@ -574,6 +572,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
     });
     return result;
   }
+
   _FieldMetadata _buildMetadata(Element element, [bool isInitializer = false]) {
     String source;
     if (element is FieldElement) {
@@ -802,7 +801,8 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
       this.constructorParameters,
       this.key,
       InterfaceType _objectType,
-      this._mapperLibPrefix, this.metadata)
+      this._mapperLibPrefix,
+      this.metadata)
       : super(_objectType, usedLibs);
 
   @override

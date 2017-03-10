@@ -60,7 +60,8 @@ class StaticFieldMapper<T> extends BuilderFieldMapper<T>
             getterMetadata,
             setterMetadata,
             constructorMetadata,
-            createModel,metadata);
+            createModel,
+            metadata);
 }
 
 /// The [StaticMapper] used for [List] types.
