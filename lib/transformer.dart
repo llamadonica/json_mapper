@@ -628,7 +628,7 @@ class StaticMapperGenerator extends Transformer with ResolverTransformer {
             clazz.typeParameters.map((tp) => tp.type), specialization));
     constructorParameters.add(new _FieldInfo(
         element.displayName, type, metadata,
-        canDecode: true, isNamed: element.parameterKind.ordinal == null));
+        canDecode: true, isNamed: element.parameterKind == ParameterKind.NAMED));
     if (element.parameterKind.ordinal != null) {
       constructorParameterIdxs[element.displayName];
     }

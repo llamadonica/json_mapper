@@ -363,6 +363,10 @@ void main() {
             {'a': 'foo'}
           ]));
     });
+    test('Can decode objects with named constructors', () {
+      var value = decode({'id': 'some_id'}, new ConcreteType<HasNamedConstructor>());
+      expect(value.id, equals('some_id'));
+    });
   });
 }
 
@@ -411,6 +415,11 @@ class GetterAndSetter {
   void set foo(String value) {
     _foo = value;
   }
+}
+
+class HasNamedConstructor {
+  @Field() final String id;
+  HasNamedConstructor({this.id});
 }
 
 // ignore: public_member_api_docs
