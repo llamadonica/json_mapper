@@ -40,7 +40,8 @@ fi
 t=0; until (xdpyinfo -display :99 &>/dev/null || test $t -gt 20); do sleep 1; let t=$t+1; done
 
 echo "Running tests"
-pub run test
+# There is probably more elegant way to do this...
+pub run test -x require-transform
 
 echo "Running transformer tests"
 pub serve --port=8080 test &> /tmp/pub-serve &

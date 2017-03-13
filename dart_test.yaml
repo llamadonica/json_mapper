@@ -1,1 +1,5 @@
 platforms: [vm, firefox, content-shell]
+tags:
+  # A test that needs to be transformed before it will 
+  # run correctly
+  require-transform:
