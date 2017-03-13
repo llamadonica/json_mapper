@@ -5,6 +5,18 @@
 
 set -e
 
+cleanup_1()
+{
+  echo "Cleaning up..."
+  kill -SIGINT %1
+}
+cleanup_2() 
+{
+  cleanup_1
+  kill -SIGINT %2
+}
+
+
 echo "Running dartanalyzer..."
 dartanalyzer $DARTANALYZER_FLAGS \
     lib/json_mapper.dart \
@@ -19,18 +31,28 @@ if [[ $(dartfmt -n --set-exit-if-changed lib/ test/) ]]; then
 fi
 
 export DISPLAY=:99.0
-sh -e /etc/init.d/xvfb start
-t=0; until (xdpyinfo -display :99 &>/dev/null || test $t -gt 10); do sleep 1; let t=$t+1; done
+if [ -f /etc/init.d/xvfb ]; then
+  sh -e /etc/init.d/xvfb start
+else
+  Xvfb :99 -ac -screen 0 1024x768x24 &
+  trap cleanup_1 EXIT
+fi
+t=0; until (xdpyinfo -display :99 &>/dev/null || test $t -gt 20); do sleep 1; let t=$t+1; done
 
 echo "Running tests"
 pub run test
 
 echo "Running transformer tests"
-pub serve --port=8080 test &
-sleep 2
+pub serve --port=8080 test &> /tmp/pub-serve &
+if [ -f /etc/init.d/xvfb ]; then
+  trap cleanup_1 EXIT
+else
+  trap cleanup_2 EXIT
+fi
+timeout --signal=SIGINT 10 tail -f -n1 /tmp/pub-serve | grep -qe "Build completed"
 pub run test --pub-serve=8080
 kill -SIGINT %1
-
+kill -SIGINT %2
 
 if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
     echo "Running coverage"
