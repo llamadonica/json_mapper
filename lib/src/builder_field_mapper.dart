@@ -16,19 +16,19 @@ typedef F _ChainFactory<E, F>(
 /// specific type, which will be marked up with field, based on an extensive
 /// collection of information, and one method which must be overriden.
 abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
-  final List<String> _positionalArgs;
-  final List<String> _namedArgs;
-  final Map<String, FieldGetter<T, dynamic>> _getters;
-  final Map<String, FieldSetter<T, dynamic>> _setters;
-  final Map<String, Type> _types;
-  final Map<String, Type> _constructorTypes;
-  final Map<String, Field> _getterFields;
-  final Map<String, Field> _setterFields;
-  final Map<String, Field> _constructorFields;
-  final Map<String, List> _getterMetadata;
-  final Map<String, List> _setterMetadata;
-  final Map<String, List> _constructorMetadata;
-  final ModelFactory<T> _createModel;
+  final List<String> positionalArgs;
+  final List<String> namedArgs;
+  final Map<String, FieldGetter<T, dynamic>> getters;
+  final Map<String, FieldSetter<T, dynamic>> setters;
+  final Map<String, Type> types;
+  final Map<String, Type> constructorTypes;
+  final Map<String, Field> getterFields;
+  final Map<String, Field> setterFields;
+  final Map<String, Field> constructorFields;
+  final Map<String, List> getterMetadata;
+  final Map<String, List> setterMetadata;
+  final Map<String, List> constructorMetadata;
+  final ModelFactory<T> createModel;
 
   /// The metadata associated with the class itself.
   final List metadata;
@@ -36,84 +36,79 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
   /// Create a new object of type [BuilderFieldMapper] when called from a
   /// subtype.
   BuilderFieldMapper(
-      this._positionalArgs,
-      this._namedArgs,
-      this._getters,
-      this._setters,
-      this._types,
-      this._constructorTypes,
-      this._getterFields,
-      this._setterFields,
-      this._constructorFields,
-      this._getterMetadata,
-      this._setterMetadata,
-      this._constructorMetadata,
-      this._createModel,
+      this.positionalArgs,
+      this.namedArgs,
+      this.getters,
+      this.setters,
+      this.types,
+      this.constructorTypes,
+      this.getterFields,
+      this.setterFields,
+      this.constructorFields,
+      this.getterMetadata,
+      this.setterMetadata,
+      this.constructorMetadata,
+      this.createModel,
       this.metadata);
 
   Iterable<_ChainFactory<Map<String, dynamic>, dynamic>>
       get _factoryPositionalArgs sync* {
-    for (var fieldName in _positionalArgs) {
+    for (var fieldName in positionalArgs) {
       yield (Map<String, dynamic> data, FieldDecoder fieldDecoder,
           Map<Type, Codec> typeCodecs) {
         return _decodeField(
             fieldName,
-            _constructorFields[fieldName],
+            constructorFields[fieldName],
             data,
-            _constructorMetadata[fieldName],
+            constructorMetadata[fieldName],
             typeCodecs,
             fieldDecoder,
-            _constructorTypes[fieldName]);
+            constructorTypes[fieldName]);
       };
     }
   }
 
   Map<String, _ChainFactory<Map<String, dynamic>, dynamic>>
-      get _factoryNamedArgs => new Map.fromIterable(_namedArgs,
+      get _factoryNamedArgs => new Map.fromIterable(namedArgs,
           value: (fieldName) => (Map<String, dynamic> data,
                   FieldDecoder fieldDecoder, Map<Type, Codec> typeCodecs) {
                 return _decodeField(
                     fieldName,
-                    _constructorFields[fieldName],
+                    constructorFields[fieldName],
                     data,
-                    _constructorMetadata[fieldName],
+                    constructorMetadata[fieldName],
                     typeCodecs,
                     fieldDecoder,
-                    _constructorTypes[fieldName]);
+                    constructorTypes[fieldName]);
               });
 
-  Iterable<_ChainDecoder<T, Map<String, dynamic>>> get _decodeChain sync* {
-    for (var fieldName in _setters.keys) {
-      yield (T container, Map<String, dynamic> data, FieldDecoder fieldDecoder,
-          Map<Type, Codec> typeCodecs) {
-        final value = _decodeField(
+  void _chainDecode(T obj, Map<String, dynamic> data, FieldDecoder fieldDecoder,
+      Map<Type, Codec> typeCodecs) {
+    for (var fieldName in setters.keys) {
+      final value = _decodeField(
             fieldName,
-            _setterFields[fieldName],
+            setterFields[fieldName],
             data,
-            _setterMetadata[fieldName],
+            setterMetadata[fieldName],
             typeCodecs,
             fieldDecoder,
-            _types[fieldName]);
-        _setters[fieldName](container, value);
-      };
+            types[fieldName]);
+      setters[fieldName](obj, value);
     }
   }
 
-  Iterable<_ChainEncoder<T, Map<String, dynamic>>> get _encodeChain sync* {
-    for (var fieldName in _getters.keys) {
-      yield (T container, Map<String, dynamic> data, FieldEncoder fieldEncoder,
-          Map<Type, Codec> typeCodecs) {
-        final value = _getters[fieldName](container);
+  void _chainEncode(obj, data, fieldEncoder, typeCodecs) {
+    for (var fieldName in getters.keys) {
+        final value = getters[fieldName](obj);
         _encodeField(
             value,
             fieldName,
-            _getterFields[fieldName],
+            getterFields[fieldName],
             data,
-            _getterMetadata[fieldName],
+            getterMetadata[fieldName],
             typeCodecs,
             fieldEncoder,
-            _types[fieldName]);
-      };
+            types[fieldName]);
     }
   }
 
@@ -124,7 +119,7 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
     if (data == null) {
       return;
     }
-    _decodeChain.forEach((f) => f(obj, data, fieldDecoder, typeCodecs));
+    _chainDecode(obj, data, fieldDecoder, typeCodecs);
     return;
   }
 
@@ -135,19 +130,19 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
       return null;
     }
     final data = <String, dynamic>{};
-    _encodeChain.forEach((f) => f(obj, data, fieldEncoder, typeCodecs));
+    _chainEncode(obj, data, fieldEncoder, typeCodecs);
 
     return data;
   }
 
   @override
   FieldGetter<T, dynamic> getGetter(String fieldName) {
-    return _getters[fieldName];
+    return getters[fieldName];
   }
 
   @override
   FieldSetter<T, dynamic> getSetter(String fieldName) {
-    return _setters[fieldName];
+    return setters[fieldName];
   }
 
   @override
@@ -163,7 +158,7 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
     final namedArgs = <String, dynamic>{};
     _factoryNamedArgs.forEach(
         (name, f) => namedArgs[name] = f(data, fieldDecoder, typeCodecs));
-    return _createModel(listArgs, namedArgs);
+    return createModel(listArgs, namedArgs);
   }
 
   dynamic _decodeField(
