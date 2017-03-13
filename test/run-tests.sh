@@ -52,7 +52,9 @@ fi
 timeout --signal=SIGINT 10 tail -f -n1 /tmp/pub-serve | grep -qe "Build completed"
 pub run test --pub-serve=8080
 kill -SIGINT %1
-kill -SIGINT %2
+if [ -f /etc/init.d/xvfb ]; then
+  kill -SIGINT %2
+fi
 
 if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
     echo "Running coverage"
