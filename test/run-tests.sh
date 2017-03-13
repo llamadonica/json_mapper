@@ -53,6 +53,7 @@ timeout --signal=SIGINT 10 tail -f -n1 /tmp/pub-serve | grep -qe "Build complete
 pub run test --pub-serve=8080
 kill -SIGINT %1
 if [ -f /etc/init.d/xvfb ]; then
+else
   kill -SIGINT %2
 fi
 
