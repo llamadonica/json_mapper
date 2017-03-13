@@ -368,7 +368,9 @@ void main() {
           decode({'id': 'some_id'}, new ConcreteType<HasNamedConstructor>());
       expect(value.id, equals('some_id'));
     }, onPlatform: {
-      'js': [ new Skip('Dart mirrors cannot handle named parameters of constructiors')]
+      'js': [
+        new Skip('Dart mirrors cannot handle named parameters of constructiors')
+      ]
     });
     test('Can decode objects with named constructors', () {
       final value =
