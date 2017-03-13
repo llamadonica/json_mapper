@@ -86,29 +86,29 @@ abstract class BuilderFieldMapper<T> implements FieldMapper<T> {
       Map<Type, Codec> typeCodecs) {
     for (var fieldName in setters.keys) {
       final value = _decodeField(
-            fieldName,
-            setterFields[fieldName],
-            data,
-            setterMetadata[fieldName],
-            typeCodecs,
-            fieldDecoder,
-            types[fieldName]);
+          fieldName,
+          setterFields[fieldName],
+          data,
+          setterMetadata[fieldName],
+          typeCodecs,
+          fieldDecoder,
+          types[fieldName]);
       setters[fieldName](obj, value);
     }
   }
 
   void _chainEncode(obj, data, fieldEncoder, typeCodecs) {
     for (var fieldName in getters.keys) {
-        final value = getters[fieldName](obj);
-        _encodeField(
-            value,
-            fieldName,
-            getterFields[fieldName],
-            data,
-            getterMetadata[fieldName],
-            typeCodecs,
-            fieldEncoder,
-            types[fieldName]);
+      final value = getters[fieldName](obj);
+      _encodeField(
+          value,
+          fieldName,
+          getterFields[fieldName],
+          data,
+          getterMetadata[fieldName],
+          typeCodecs,
+          fieldEncoder,
+          types[fieldName]);
     }
   }
 
