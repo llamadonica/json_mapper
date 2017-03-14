@@ -59,9 +59,9 @@ fi
 
 pub build --mode debug test
 
-cat <<EOF >test/coverage_test.dart
-import '../build/test/mapper_test.dart' as static_test;
-import '../test/mapper_test.dart' as dynamic_test;
+cat <<EOF >coverage_test.dart
+import 'build/test/mapper_test.dart' as static_test;
+import 'test/mapper_test.dart' as dynamic_test;
 
 main() {
   static_test.main();
