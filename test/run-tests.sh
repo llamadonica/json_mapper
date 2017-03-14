@@ -78,5 +78,5 @@ if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
         --exclude-test-files \
         --debug \
         --token="$COVERALLS_TOKEN" \
-        test/coverage_test.dart
+        coverage_test.dart
 fi
