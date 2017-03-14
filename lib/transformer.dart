@@ -964,7 +964,8 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
         '  createModel: (List args, Map<String, dynamic> namedArgs) => new $key(');
     var i = 0;
     source.write(constructorParameters
-        .map((f) => f.isNamed ? '${f.name}: namedArgs[r"${f.name}"]' : 'args[${i++}]')
+        .map((f) =>
+            f.isNamed ? '${f.name}: namedArgs[r"${f.name}"]' : 'args[${i++}]')
         .join(', '));
     source.write(')');
   }
