@@ -964,7 +964,7 @@ class _FieldMapperConfigGenerator extends _ConfigGenerator {
         '  createModel: (List args, Map<String, dynamic> namedArgs) => new $key(');
     var i = 0;
     source.write(constructorParameters
-        .map((f) => f.isNamed ? 'namedArgs[${f.name}]' : 'args[${i++}]')
+        .map((f) => f.isNamed ? '${f.name}: namedArgs[r"${f.name}"]' : 'args[${i++}]')
         .join(', '));
     source.write(')');
   }
@@ -1021,7 +1021,6 @@ String _getShortTypeName(DartType type, _UsedLibs usedLibs) {
   String typeName;
 
   if (type.element != null && !type.isDynamic) {
-    print('> Resolving type ${type.displayName}');
     typePrefix = usedLibs.resolveLib(type.element.library);
   }
   if (typePrefix.isNotEmpty) {
@@ -1039,7 +1038,6 @@ String _globalGetTypeName(
   type = type.resolveToBound(objectType);
 
   if (type.element != null && !type.isDynamic) {
-    print('> Resolving type ${type.displayName}');
     typePrefix = usedLibs.resolveLib(type.element.library);
   }
   if (typePrefix.isNotEmpty) {
@@ -1064,7 +1062,6 @@ class _UsedLibs {
     var prefix = prefixes[lib];
     if (prefix == null) {
       prefix = lib.isDartCore ? "" : "import_${prefixes.length + 1}";
-      print('${lib.getExtendedDisplayName('')} is ${prefixes.length + 1}');
       prefixes[lib] = prefix;
     }
     return prefix;
