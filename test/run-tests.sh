@@ -57,7 +57,20 @@ if [ ! -f /etc/init.d/xvfb ]; then
   kill -SIGINT %2
 fi
 
+pub build --mode debug test
+
+cat <<EOF >test/coverage_test.dart
+import 'build/test/mapper_test.dart' as static_test;
+import 'test/mapper_test.dart' as dynamic_test;
+
+main() {
+  static_test.main();
+  dynamic_test.main();
+}
+EOF
+
 if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
+    pub build --mode debug test
     echo "Running coverage"
     pub global activate dart_coveralls
     pub global run dart_coveralls report \
@@ -65,5 +78,5 @@ if [ "$COVERALLS_TOKEN" ] && [ "$TRAVIS_DART_VERSION" = "stable" ]; then
         --exclude-test-files \
         --debug \
         --token="$COVERALLS_TOKEN" \
-        test/mapper_test.dart
+        test/coverage_test.dart
 fi
